@@ -61,35 +61,24 @@ class DeviceCommandService @Inject constructor(
             }
         }
 
-        // Telegram uchun bir nechta package name sinash
-        val packagesToTry = if (packageName == "org.telegram.messenger") {
-            listOf("org.telegram.messenger", "org.telegram.messenger.web", "org.thunderdog.challegram")
-        } else {
-            listOf(packageName)
-        }
-
-        for (pkg in packagesToTry) {
-            try {
-                val intent = context.packageManager.getLaunchIntentForPackage(pkg)?.apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                }
-                if (intent != null) {
-                    context.startActivity(intent)
-                    return CommandResult.Success("$appName ochildi")
-                }
-            } catch (e: Exception) {}
-        }
-
-        // Play Store ga yo'naltirish
         return try {
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                data = Uri.parse("market://details?id=$packageName")
+            val intent = context.packageManager.getLaunchIntentForPackage(packageName)?.apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
-            context.startActivity(intent)
-            CommandResult.Pending("$appName topilmadi. Do'kon ochilyapti...")
+            if (intent != null) {
+                context.startActivity(intent)
+                CommandResult.Success("$appName ochildi")
+            } else {
+                // Play Store ga yo'naltirish
+                val storeIntent = Intent(Intent.ACTION_VIEW).apply {
+                    data = Uri.parse("market://details?id=$packageName")
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                context.startActivity(storeIntent)
+                CommandResult.Pending("$appName o'rnatilmagan. Do'kon ochilyapti...")
+            }
         } catch (e: Exception) {
-            CommandResult.Error("$appName ocholmadim")
+            CommandResult.Error("$appName ocholmadim: ${e.message}")
         }
     }
 
@@ -108,20 +97,13 @@ class DeviceCommandService @Inject constructor(
     fun makeCall(contactName: String): CommandResult {
         return try {
             val phone = findContactPhone(contactName)
-            if (phone != null) {
-                val intent = Intent(Intent.ACTION_DIAL).apply {
-                    data = Uri.parse("tel:$phone")
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                }
-                context.startActivity(intent)
-                CommandResult.Success("$contactName ga qo'ng'iroq ochilyapti")
-            } else {
-                val intent = Intent(Intent.ACTION_DIAL).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                }
-                context.startActivity(intent)
-                CommandResult.Pending("$contactName topilmadi. Telefon ochilyapti...")
+            val intent = Intent(Intent.ACTION_DIAL).apply {
+                if (phone != null) data = Uri.parse("tel:$phone")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
+            context.startActivity(intent)
+            if (phone != null) CommandResult.Success("$contactName ga qo'ng'iroq ochilyapti")
+            else CommandResult.Pending("$contactName topilmadi. Telefon ochilyapti...")
         } catch (e: Exception) {
             CommandResult.Error("Qo'ng'iroq qilolmadim")
         }
