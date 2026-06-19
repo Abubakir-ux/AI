@@ -6,8 +6,10 @@ import android.hardware.camera2.CameraManager
 import android.net.Uri
 import android.provider.ContactsContract
 import android.provider.Settings
+import android.telephony.SmsManager
 import com.aivoice.assistant.domain.model.CommandResult
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -18,21 +20,25 @@ class DeviceCommandService @Inject constructor(
 ) {
     private var cameraManager: CameraManager? = null
     private var cameraId: String? = null
+    private var isFlashlightOn = false
 
     init {
         try {
             cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
             cameraId = cameraManager?.cameraIdList?.firstOrNull()
-        } catch (e: Exception) {}
+        } catch (e: Exception) {
+            // Camera not available
+        }
     }
 
     fun toggleFlashlight(on: Boolean): CommandResult {
         return try {
             cameraManager?.setTorchMode(cameraId ?: return CommandResult.Error("Kamera topilmadi"), on)
+            isFlashlightOn = on
             if (on) CommandResult.Success("Fonar yoqildi")
             else CommandResult.Success("Fonar o'chirildi")
         } catch (e: Exception) {
-            CommandResult.Error("Fonar ishlamadi")
+            CommandResult.Error("Fonar ishlamadi: ${e.message}")
         }
     }
 
@@ -49,6 +55,7 @@ class DeviceCommandService @Inject constructor(
     }
 
     fun openApp(packageName: String, appName: String): CommandResult {
+        // Maxsus holat: Settings
         if (packageName == "android.settings") {
             return try {
                 val intent = Intent(Settings.ACTION_SETTINGS).apply {
@@ -61,35 +68,32 @@ class DeviceCommandService @Inject constructor(
             }
         }
 
-        // Telegram uchun bir nechta package name sinash
-        val packagesToTry = if (packageName == "org.telegram.messenger") {
-            listOf("org.telegram.messenger", "org.telegram.messenger.web", "org.thunderdog.challegram")
-        } else {
-            listOf(packageName)
-        }
-
-        for (pkg in packagesToTry) {
-            try {
-                val intent = context.packageManager.getLaunchIntentForPackage(pkg)?.apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                }
-                if (intent != null) {
-                    context.startActivity(intent)
-                    return CommandResult.Success("$appName ochildi")
-                }
-            } catch (e: Exception) {}
-        }
-
-        // Play Store ga yo'naltirish
         return try {
+            val intent = context.packageManager.getLaunchIntentForPackage(packageName)?.apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            if (intent != null) {
+                context.startActivity(intent)
+                CommandResult.Success("$appName ochildi")
+            } else {
+                // Market ga yo'naltirish
+                openPlayStore(packageName)
+                CommandResult.Pending("$appName o'rnatilmagan. Do'kon ochilyapti...")
+            }
+        } catch (e: Exception) {
+            CommandResult.Error("$appName ocholmadim")
+        }
+    }
+
+    private fun openPlayStore(packageName: String) {
+        try {
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 data = Uri.parse("market://details?id=$packageName")
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
             context.startActivity(intent)
-            CommandResult.Pending("$appName topilmadi. Do'kon ochilyapti...")
         } catch (e: Exception) {
-            CommandResult.Error("$appName ocholmadim")
+            // ignore
         }
     }
 
@@ -98,6 +102,7 @@ class DeviceCommandService @Inject constructor(
         val hour = now.get(Calendar.HOUR_OF_DAY)
         val minute = now.get(Calendar.MINUTE)
         val minuteStr = if (minute < 10) "0$minute" else "$minute"
+
         return when (language) {
             "uz" -> "Hozir soat $hour:$minuteStr"
             "ru" -> "Сейчас $hour:$minuteStr"
