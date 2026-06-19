@@ -31,15 +31,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
-        // Wake word service ni ishga tushirish
         startWakeWordService()
-
-        // Wake word orqali kelgan bo'lsa - tinglashni boshlash
         if (intent.getBooleanExtra("wake_word_triggered", false)) {
             viewModel.startListening()
         }
-
         setContent {
             AIVoiceTheme {
                 val permissionsState = rememberMultiplePermissionsState(
@@ -50,7 +45,6 @@ class MainActivity : ComponentActivity() {
                     )
                 )
                 val uiState by viewModel.uiState.collectAsState()
-
                 Scaffold(modifier = Modifier.fillMaxSize()) { paddingValues ->
                     if (permissionsState.allPermissionsGranted) {
                         MainScreen(
@@ -84,8 +78,6 @@ class MainActivity : ComponentActivity() {
         try {
             val serviceIntent = Intent(this, WakeWordService::class.java)
             startForegroundService(serviceIntent)
-        } catch (e: Exception) {
-            // ignore
-        }
+        } catch (e: Exception) {}
     }
 }
