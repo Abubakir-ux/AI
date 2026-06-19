@@ -11,153 +11,109 @@ class CommandParser @Inject constructor() {
         val lower = text.lowercase().trim()
 
         return when {
-            // Fonar
             isFlashlightOn(lower) -> VoiceCommand.FlashlightOn
             isFlashlightOff(lower) -> VoiceCommand.FlashlightOff
-
-            // Kamera
             isOpenCamera(lower) -> VoiceCommand.OpenCamera
-
-            // Telegram
             isOpenTelegram(lower) -> VoiceCommand.OpenTelegram
-
-            // YouTube
             isOpenYouTube(lower) -> VoiceCommand.OpenYouTube
-
-            // Vaqt
             isGetTime(lower) -> VoiceCommand.GetCurrentTime
-
-            // Ob-havo
             isGetWeather(lower) -> VoiceCommand.GetWeather
-
-            // Qo'ng'iroq
             isMakeCall(lower) -> parseMakeCall(lower)
-
-            // SMS
             isSendSms(lower) -> parseSendSms(lower)
-
-            // Boshqa ilovalar
             else -> parseOtherApps(lower) ?: VoiceCommand.AskAI(text)
         }
     }
 
-    private fun isFlashlightOn(text: String): Boolean {
-        return text.containsAny(
-            "fonarni yoq", "fonарni yoq", "fonar yoq", "фонарни ёқ",
-            "включи фонарик", "включи фонарь", "фонарик включи",
-            "turn on flashlight", "flashlight on", "enable flashlight"
-        )
-    }
+    private fun isFlashlightOn(text: String) = text.containsAny(
+        "fonarni yoq", "fonar yoq", "фонарик включи", "включи фонарик",
+        "turn on flashlight", "flashlight on"
+    )
 
-    private fun isFlashlightOff(text: String): Boolean {
-        return text.containsAny(
-            "fonarni o'chir", "fonarni ochir", "fonar o'chir", "fonar ochir",
-            "выключи фонарик", "выключи фонарь", "фонарик выключи",
-            "turn off flashlight", "flashlight off", "disable flashlight"
-        )
-    }
+    private fun isFlashlightOff(text: String) = text.containsAny(
+        "fonarni o'chir", "fonarni ochir", "fonar o'chir",
+        "выключи фонарик", "turn off flashlight", "flashlight off"
+    )
 
-    private fun isOpenCamera(text: String): Boolean {
-        return text.containsAny(
-            "kamerani och", "kamera och", "kamerani oч",
-            "открой камеру", "камеру открой", "камера",
-            "open camera", "camera open"
-        )
-    }
+    private fun isOpenCamera(text: String) = text.containsAny(
+        "kamerani och", "kamera och", "открой камеру", "open camera"
+    )
 
-    private fun isOpenTelegram(text: String): Boolean {
-        return text.containsAny(
-            "telegramni och", "telegramni ochish", "telegram och",
-            "открой телеграм", "телеграм открой", "открыть телеграм",
-            "open telegram", "telegram open"
-        )
-    }
+    private fun isOpenTelegram(text: String) = text.containsAny(
+        "telegramni och", "telegram och", "открой телеграм", "open telegram", "telegram"
+    )
 
-    private fun isOpenYouTube(text: String): Boolean {
-        return text.containsAny(
-            "youtubeni och", "youtube och", "ютуб оч",
-            "открой ютуб", "открой youtube", "ютуб открой",
-            "open youtube", "youtube open"
-        )
-    }
+    private fun isOpenYouTube(text: String) = text.containsAny(
+        "youtubeni och", "youtube och", "открой ютуб", "open youtube", "youtube"
+    )
 
-    private fun isGetTime(text: String): Boolean {
-        return text.containsAny(
-            "soat nechi", "soat nechchi", "hozir soat", "vaqt qancha",
-            "который час", "сколько времени", "который сейчас час", "время",
-            "what time is it", "current time", "what's the time"
-        )
-    }
+    private fun isGetTime(text: String) = text.containsAny(
+        "soat nechi", "soat nechchi", "hozir soat", "vaqt",
+        "который час", "сколько времени", "what time"
+    )
 
-    private fun isGetWeather(text: String): Boolean {
-        return text.containsAny(
-            "ob-havo", "obhavo", "havo qanday", "bugun havo",
-            "погода", "какая погода", "какая сегодня погода",
-            "weather", "what's the weather", "how's the weather"
-        )
-    }
+    private fun isGetWeather(text: String) = text.containsAny(
+        "ob-havo", "obhavo", "havo qanday", "погода", "weather"
+    )
 
-    private fun isMakeCall(text: String): Boolean {
-        return text.containsAny(
-            "qo'ng'iroq qil", "qongiroq qil", "chaqir",
-            "позвони", "позвонить", "набери",
-            "call", "phone", "dial"
-        )
-    }
+    private fun isMakeCall(text: String) = text.containsAny(
+        "qo'ng'iroq qil", "qongiroq", "chaqir", "позвони", "call", "ring"
+    )
 
-    private fun isSendSms(text: String): Boolean {
-        return text.containsAny(
-            "sms yubor", "xabar yubor", "sms jo'nat",
-            "отправь смс", "напиши смс", "смс отправь",
-            "send sms", "send message", "text"
-        )
-    }
+    private fun isSendSms(text: String) = text.containsAny(
+        "sms yubor", "xabar yubor", "отправь смс", "send sms", "send message"
+    )
 
     private fun parseMakeCall(text: String): VoiceCommand {
         val patterns = listOf(
-            Regex("(?:qo'ng'iroq qil|qongiroq qil|chaqir)\\s+(.+)"),
-            Regex("(.+?)\\s+(?:ga|ga qo'ng'iroq|chaqir)"),
+            Regex("(.+?)\\s*ga\\s*(?:qo'ng'iroq|qongiroq|chaqir)"),
+            Regex("(?:qo'ng'iroq qil|chaqir)\\s+(.+)"),
             Regex("(?:позвони|набери)\\s+(.+)"),
-            Regex("(?:call|phone|dial)\\s+(.+)")
+            Regex("(?:call|ring)\\s+(.+)")
         )
         for (pattern in patterns) {
             val match = pattern.find(text)
-            if (match != null) {
-                return VoiceCommand.MakeCall(match.groupValues[1].trim())
-            }
+            if (match != null) return VoiceCommand.MakeCall(match.groupValues[1].trim())
         }
         return VoiceCommand.MakeCall("")
     }
 
     private fun parseSendSms(text: String): VoiceCommand {
         val patterns = listOf(
-            Regex("(?:sms yubor|xabar yubor)\\s+(.+?)\\s+(?:ga|uchun)"),
-            Regex("(?:отправь смс|напиши смс)\\s+(.+)"),
+            Regex("(?:sms yubor|xabar yubor)\\s+(.+?)\\s+ga"),
+            Regex("(?:отправь смс)\\s+(.+)"),
             Regex("(?:send sms|text)\\s+(.+)")
         )
         for (pattern in patterns) {
             val match = pattern.find(text)
-            if (match != null) {
-                return VoiceCommand.SendSms(match.groupValues[1].trim(), "")
-            }
+            if (match != null) return VoiceCommand.SendSms(match.groupValues[1].trim(), "")
         }
         return VoiceCommand.SendSms("", "")
     }
 
     private fun parseOtherApps(text: String): VoiceCommand? {
         val appMap = mapOf(
-            listOf("instagramni och", "instagram och", "открой инстаграм", "open instagram") 
-                to Pair("com.instagram.android", "Instagram"),
-            listOf("facebookni och", "facebook och", "открой фейсбук", "open facebook") 
-                to Pair("com.facebook.katana", "Facebook"),
-            listOf("googleni och", "google och", "открой гугл", "open google") 
-                to Pair("com.google.android.googlequicksearchbox", "Google"),
-            listOf("xaritani och", "xarita och", "открой карты", "open maps") 
-                to Pair("com.google.android.apps.maps", "Maps"),
-            listOf("musiqa och", "spotify och", "открой spotify", "open spotify") 
-                to Pair("com.spotify.music", "Spotify"),
-            listOf("sozlamalarni och", "sozlamalar", "открой настройки", "open settings") 
-                to Pair("android.settings", "Settings")
+            listOf("instagram", "instagramni och", "открой инстаграм") to
+                Pair("com.instagram.android", "Instagram"),
+            listOf("whatsapp", "whatsappni och", "открой вотсап") to
+                Pair("com.whatsapp", "WhatsApp"),
+            listOf("facebook", "facebookni och", "открой фейсбук") to
+                Pair("com.facebook.katana", "Facebook"),
+            listOf("tiktok", "tiktokni och", "открой тикток") to
+                Pair("com.zhiliaoapp.musically", "TikTok"),
+            listOf("xaritani och", "xarita", "открой карты", "maps") to
+                Pair("com.google.android.apps.maps", "Maps"),
+            listOf("spotify", "musiqa och") to
+                Pair("com.spotify.music", "Spotify"),
+            listOf("sozlamalar", "настройки", "settings") to
+                Pair("android.settings", "Settings"),
+            listOf("calculator", "kalkulyator", "калькулятор") to
+                Pair("com.google.android.calculator", "Calculator"),
+            listOf("gmail", "почта", "email") to
+                Pair("com.google.android.gm", "Gmail"),
+            listOf("play market", "плей маркет", "market") to
+                Pair("com.android.vending", "Play Market"),
+            listOf("chrome", "браузер", "brauzer") to
+                Pair("com.android.chrome", "Chrome")
         )
 
         for ((keywords, appInfo) in appMap) {
@@ -168,7 +124,6 @@ class CommandParser @Inject constructor() {
         return null
     }
 
-    private fun String.containsAny(vararg keywords: String): Boolean {
-        return keywords.any { this.contains(it) }
-    }
+    private fun String.containsAny(vararg keywords: String) =
+        keywords.any { this.contains(it) }
 }

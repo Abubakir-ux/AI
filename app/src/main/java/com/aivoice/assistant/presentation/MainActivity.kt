@@ -1,6 +1,7 @@
 package com.aivoice.assistant.presentation
 
 import android.Manifest
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -16,6 +17,7 @@ import com.aivoice.assistant.presentation.ui.screens.MainScreen
 import com.aivoice.assistant.presentation.ui.screens.PermissionScreen
 import com.aivoice.assistant.presentation.ui.theme.AIVoiceTheme
 import com.aivoice.assistant.presentation.viewmodel.AssistantViewModel
+import com.aivoice.assistant.service.WakeWordService
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import dagger.hilt.android.AndroidEntryPoint
@@ -30,6 +32,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // Wake word service ni ishga tushirish
+        startWakeWordService()
+
+        // Wake word orqali kelgan bo'lsa - tinglashni boshlash
+        if (intent.getBooleanExtra("wake_word_triggered", false)) {
+            viewModel.startListening()
+        }
+
         setContent {
             AIVoiceTheme {
                 val permissionsState = rememberMultiplePermissionsState(
@@ -39,7 +49,6 @@ class MainActivity : ComponentActivity() {
                         Manifest.permission.CALL_PHONE
                     )
                 )
-
                 val uiState by viewModel.uiState.collectAsState()
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { paddingValues ->
@@ -61,6 +70,22 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (intent.getBooleanExtra("wake_word_triggered", false)) {
+            viewModel.startListening()
+        }
+    }
+
+    private fun startWakeWordService() {
+        try {
+            val serviceIntent = Intent(this, WakeWordService::class.java)
+            startForegroundService(serviceIntent)
+        } catch (e: Exception) {
+            // ignore
         }
     }
 }
