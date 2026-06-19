@@ -9,34 +9,45 @@ import com.aivoice.assistant.presentation.MainActivity
 
 class WakeWordService : Service() {
 
-    private val CHANNEL_ID = "wake_word_channel"
+    private val CHANNEL_ID = "ai_assistant_channel"
     private val NOTIFICATION_ID = 1
 
     override fun onCreate() {
         super.onCreate()
-        createNotificationChannel()
-        startForeground(NOTIFICATION_ID, buildNotification())
+        try {
+            createNotificationChannel()
+            startForeground(NOTIFICATION_ID, buildNotification())
+        } catch (e: Exception) {
+            stopSelf()
+        }
     }
 
     private fun buildNotification(): Notification {
         val intent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
-            this, 0, intent, PendingIntent.FLAG_IMMUTABLE
+            this, 0, intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("AI Assistant")
-            .setContentText("Tayyor — ilovani oching")
+            .setContentTitle("AI Assistant ishlayapti")
+            .setContentText("Ilova fonga ishlamoqda")
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
+            .setSilent(true)
             .build()
     }
 
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
-            CHANNEL_ID, "AI Assistant",
-            NotificationManager.IMPORTANCE_LOW
-        )
+            CHANNEL_ID,
+            "AI Assistant",
+            NotificationManager.IMPORTANCE_MIN
+        ).apply {
+            setShowBadge(false)
+            enableLights(false)
+            enableVibration(false)
+        }
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.createNotificationChannel(channel)
     }
