@@ -20,7 +20,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // OpenAI API key - production da local.properties dan o'qing
-        buildConfigField("String", "OPENAI_API_KEY", "\"YOUR_OPENAI_API_KEY_HERE\"")
+        buildConfigField("String", "GEMINI_API_KEY", "\"${System.getenv("GEMINI_API_KEY") ?: "YOUR_KEY_HERE"}\"")
         buildConfigField("String", "WEATHER_API_KEY", "\"YOUR_OPENWEATHER_API_KEY_HERE\"")
     }
 

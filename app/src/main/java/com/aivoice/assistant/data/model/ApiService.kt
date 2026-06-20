@@ -10,6 +10,14 @@ interface OpenAIService {
     ): OpenAIResponse
 }
 
+interface GeminiService {
+    @POST("v1beta/models/gemini-1.5-flash:generateContent")
+    suspend fun generateContent(
+        @Query("key") apiKey: String,
+        @Body request: GeminiRequest
+    ): GeminiResponse
+}
+
 interface WeatherService {
     @GET("data/2.5/weather")
     suspend fun getWeather(

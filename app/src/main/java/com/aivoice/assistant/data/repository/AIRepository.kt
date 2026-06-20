@@ -10,11 +10,9 @@ import javax.inject.Singleton
 
 @Singleton
 class AIRepository @Inject constructor(
-    private val openAIService: OpenAIService,
+    private val geminiService: GeminiService,
     private val weatherService: WeatherService
 ) {
-
-    private val conversationHistory = mutableListOf<OpenAIMessage>()
 
     suspend fun askAI(
         question: String,
@@ -22,33 +20,24 @@ class AIRepository @Inject constructor(
     ): Result<String> = withContext(Dispatchers.IO) {
         try {
             val systemPrompt = buildSystemPrompt(language)
+            val fullPrompt = "$systemPrompt\n\nSavol: $question"
 
-            // Tarix bilan xabar yuborish
-            val messages = mutableListOf(
-                OpenAIMessage("system", systemPrompt)
-            )
-            messages.addAll(conversationHistory.takeLast(6)) // Oxirgi 6 xabar
-            messages.add(OpenAIMessage("user", question))
-
-            val response = openAIService.chat(
-                authorization = "Bearer ${BuildConfig.OPENAI_API_KEY}",
-                request = OpenAIRequest(messages = messages)
+            val request = GeminiRequest(
+                contents = listOf(
+                    GeminiContent(parts = listOf(GeminiPart(text = fullPrompt)))
+                )
             )
 
-            val answer = response.choices.firstOrNull()?.message?.content
+            val response = geminiService.generateContent(
+                apiKey = BuildConfig.GEMINI_API_KEY,
+                request = request
+            )
+
+            val answer = response.candidates?.firstOrNull()
+                ?.content?.parts?.firstOrNull()?.text
                 ?: "Javob topilmadi"
 
-            // Tarixga qo'shish
-            conversationHistory.add(OpenAIMessage("user", question))
-            conversationHistory.add(OpenAIMessage("assistant", answer))
-
-            // Tarixni cheklash
-            if (conversationHistory.size > 20) {
-                conversationHistory.removeFirst()
-                conversationHistory.removeFirst()
-            }
-
-            Result.success(answer)
+            Result.success(answer.trim())
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -77,19 +66,11 @@ class AIRepository @Inject constructor(
 
     private fun buildSystemPrompt(language: String): String {
         return when (language) {
-            "uz" -> """Siz AI ovozli yordamchisiz. Qisqa, aniq va foydali javoblar bering.
-                |O'zbek tilida muloqot qiling. Javoblar 2-3 jumladan oshmasin.
-                |Foydalanuvchiga do'stona munosabatda bo'ling.""".trimMargin()
-            "ru" -> """Вы AI голосовой помощник. Давайте краткие, точные и полезные ответы.
-                |Общайтесь на русском языке. Ответы не должны превышать 2-3 предложения.
-                |Будьте дружелюбны к пользователю.""".trimMargin()
-            else -> """You are an AI voice assistant. Give brief, accurate and helpful answers.
-                |Communicate in English. Responses should not exceed 2-3 sentences.
-                |Be friendly to the user.""".trimMargin()
+            "uz" -> "Siz AI ovozli yordamchisiz. Qisqa, aniq va foydali javob bering o'zbek tilida. 2-3 jumladan oshmasin."
+            "ru" -> "Вы AI голосовой помощник. Дайте краткий ответ на русском языке. Не более 2-3 предложений."
+            else -> "You are an AI voice assistant. Give a brief answer in English. No more than 2-3 sentences."
         }
     }
 
-    fun clearHistory() {
-        conversationHistory.clear()
-    }
+    fun clearHistory() {}
 }

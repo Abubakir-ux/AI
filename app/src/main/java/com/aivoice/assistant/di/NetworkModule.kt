@@ -1,5 +1,6 @@
 package com.aivoice.assistant.di
 
+import com.aivoice.assistant.data.model.GeminiService
 import com.aivoice.assistant.data.model.OpenAIService
 import com.aivoice.assistant.data.model.WeatherService
 import dagger.Module
@@ -45,6 +46,17 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    @Named("gemini")
+    fun provideGeminiRetrofit(client: OkHttpClient): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl("https://generativelanguage.googleapis.com/")
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+
+    @Provides
+    @Singleton
     @Named("weather")
     fun provideWeatherRetrofit(client: OkHttpClient): Retrofit {
         return Retrofit.Builder()
@@ -58,6 +70,12 @@ object NetworkModule {
     @Singleton
     fun provideOpenAIService(@Named("openai") retrofit: Retrofit): OpenAIService {
         return retrofit.create(OpenAIService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGeminiService(@Named("gemini") retrofit: Retrofit): GeminiService {
+        return retrofit.create(GeminiService::class.java)
     }
 
     @Provides
