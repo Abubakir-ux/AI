@@ -103,6 +103,14 @@ class AssistantViewModel @Inject constructor(
             val lang = _uiState.value.currentLanguage.code
 
             when (command) {
+                is VoiceCommand.Greeting -> {
+                    val greeting = when (lang) {
+                        "uz" -> "Assalomu alaykum! Sizga qanday yordam bera olaman?"
+                        "ru" -> "Здравствуйте! Чем могу помочь?"
+                        else -> "Hello! How can I help you?"
+                    }
+                    speakAndAddMessage(greeting)
+                }
                 is VoiceCommand.FlashlightOn -> {
                     val preMsg = getPreMessage("flashlight_on", lang)
                     speakAndAddMessage(preMsg)

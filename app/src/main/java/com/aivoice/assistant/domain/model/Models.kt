@@ -11,6 +11,7 @@ data class ChatMessage(
 
 // Buyruq turlari
 sealed class VoiceCommand {
+    object Greeting : VoiceCommand()
     object FlashlightOn : VoiceCommand()
     object FlashlightOff : VoiceCommand()
     object OpenCamera : VoiceCommand()

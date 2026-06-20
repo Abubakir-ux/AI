@@ -11,6 +11,7 @@ class CommandParser @Inject constructor() {
         val lower = text.lowercase().trim()
 
         return when {
+            isGreeting(lower) -> VoiceCommand.Greeting
             isFlashlightOn(lower) -> VoiceCommand.FlashlightOn
             isFlashlightOff(lower) -> VoiceCommand.FlashlightOff
             isOpenCamera(lower) -> VoiceCommand.OpenCamera
@@ -24,63 +25,91 @@ class CommandParser @Inject constructor() {
         }
     }
 
+    private fun isGreeting(text: String) = text.containsAny(
+        "salom", "assalomu alaykum", "assalom", "hey ai", "hey eye", "hey",
+        "привет", "здравствуй", "хей аи",
+        "hello", "hi there"
+    ) && text.split(" ").size <= 4
+
     private fun isFlashlightOn(text: String) = text.containsAny(
-        "fonarni yoq", "fonar yoq", "фонарик включи", "включи фонарик",
-        "turn on flashlight", "flashlight on"
+        "fonarni yoq", "fonar yoq", "fonarni yoqib", "fonarni yoqing",
+        "фонарик включи", "включи фонарик", "включи фонарь",
+        "turn on flashlight", "flashlight on", "enable flashlight"
     )
 
     private fun isFlashlightOff(text: String) = text.containsAny(
-        "fonarni o'chir", "fonarni ochir", "fonar o'chir",
-        "выключи фонарик", "turn off flashlight", "flashlight off"
+        "fonarni o'chir", "fonarni ochir", "fonar o'chir", "fonarni ochirib",
+        "выключи фонарик", "выключи фонарь",
+        "turn off flashlight", "flashlight off", "disable flashlight"
     )
 
     private fun isOpenCamera(text: String) = text.containsAny(
-        "kamerani och", "kamera och", "открой камеру", "open camera"
+        "kamerani och", "kamera och", "kamerani ochib",
+        "открой камеру", "камера",
+        "open camera", "launch camera"
     )
 
     private fun isOpenTelegram(text: String) = text.containsAny(
-        "telegramni och", "telegram och", "открой телеграм", "open telegram", "telegram"
+        "telegramni och", "telegram och", "telegramni ochib", "telegram ochish",
+        "открой телеграм", "телеграм открой", "запусти телеграм",
+        "open telegram", "launch telegram", "start telegram"
     )
 
     private fun isOpenYouTube(text: String) = text.containsAny(
-        "youtubeni och", "youtube och", "открой ютуб", "open youtube", "youtube"
+        "youtubeni och", "youtube och", "ютуб оч", "ютуб открой",
+        "открой ютуб", "открой youtube",
+        "open youtube", "launch youtube"
     )
 
     private fun isGetTime(text: String) = text.containsAny(
-        "soat nechi", "soat nechchi", "hozir soat", "vaqt",
-        "который час", "сколько времени", "what time"
+        "soat nechi", "soat nechchi", "hozir soat", "vaqt qancha",
+        "который час", "сколько времени", "время сейчас",
+        "what time is it", "current time", "what's the time"
     )
 
     private fun isGetWeather(text: String) = text.containsAny(
-        "ob-havo", "obhavo", "havo qanday", "погода", "weather"
+        "ob-havo", "obhavo", "havo qanday", "bugun havo",
+        "погода", "какая погода",
+        "weather", "what's the weather"
     )
 
     private fun isMakeCall(text: String) = text.containsAny(
-        "qo'ng'iroq qil", "qongiroq", "chaqir", "позвони", "call", "ring"
+        "qo'ng'iroq qil", "qongiroq qil", "qongiroq", "chaqir",
+        "позвони", "набери", "вызови",
+        "call", "phone", "dial", "ring"
     )
 
     private fun isSendSms(text: String) = text.containsAny(
-        "sms yubor", "xabar yubor", "отправь смс", "send sms", "send message"
+        "sms yubor", "xabar yubor", "sms jo'nat",
+        "отправь смс", "напиши смс",
+        "send sms", "send message", "text"
     )
 
     private fun parseMakeCall(text: String): VoiceCommand {
+        // Avval "X ga qo'ng'iroq" patterni
         val patterns = listOf(
-            Regex("(.+?)\\s*ga\\s*(?:qo'ng'iroq|qongiroq|chaqir)"),
-            Regex("(?:qo'ng'iroq qil|chaqir)\\s+(.+)"),
-            Regex("(?:позвони|набери)\\s+(.+)"),
-            Regex("(?:call|ring)\\s+(.+)")
+            Regex("(.+?)\\s+ga\\s+(?:qo'ng'iroq qil|qongiroq qil|qongiroq|chaqir)"),
+            Regex("(?:qo'ng'iroq qil|qongiroq qil|chaqir)\\s+(.+)"),
+            Regex("(?:позвони|набери|вызови)\\s+(.+)"),
+            Regex("(?:call|phone|dial|ring)\\s+(.+)")
         )
         for (pattern in patterns) {
             val match = pattern.find(text)
-            if (match != null) return VoiceCommand.MakeCall(match.groupValues[1].trim())
+            if (match != null) {
+                val name = match.groupValues[1].trim()
+                    .removeSuffix("ga")
+                    .removeSuffix("ni")
+                    .trim()
+                if (name.isNotEmpty()) return VoiceCommand.MakeCall(name)
+            }
         }
         return VoiceCommand.MakeCall("")
     }
 
     private fun parseSendSms(text: String): VoiceCommand {
         val patterns = listOf(
-            Regex("(?:sms yubor|xabar yubor)\\s+(.+?)\\s+ga"),
-            Regex("(?:отправь смс)\\s+(.+)"),
+            Regex("(?:sms yubor|xabar yubor)\\s+(.+?)\\s+(?:ga|uchun)"),
+            Regex("(?:отправь смс|напиши смс)\\s+(.+)"),
             Regex("(?:send sms|text)\\s+(.+)")
         )
         for (pattern in patterns) {
@@ -92,28 +121,41 @@ class CommandParser @Inject constructor() {
 
     private fun parseOtherApps(text: String): VoiceCommand? {
         val appMap = mapOf(
-            listOf("instagram", "instagramni och", "открой инстаграм") to
+            listOf("instagramni och", "instagram och", "instagram",
+                   "открой инстаграм", "инстаграм") to
                 Pair("com.instagram.android", "Instagram"),
-            listOf("whatsapp", "whatsappni och", "открой вотсап") to
+            listOf("whatsappni och", "whatsapp och", "whatsapp", "ватсап",
+                   "открой вотсап", "открой ватсап") to
                 Pair("com.whatsapp", "WhatsApp"),
-            listOf("facebook", "facebookni och", "открой фейсбук") to
+            listOf("facebookni och", "facebook och", "facebook",
+                   "открой фейсбук") to
                 Pair("com.facebook.katana", "Facebook"),
-            listOf("tiktok", "tiktokni och", "открой тикток") to
+            listOf("tiktokni och", "tiktok och", "tiktok", "тикток",
+                   "открой тикток") to
                 Pair("com.zhiliaoapp.musically", "TikTok"),
-            listOf("xaritani och", "xarita", "открой карты", "maps") to
+            listOf("xaritani och", "xarita och", "xarita",
+                   "открой карты", "карты", "maps") to
                 Pair("com.google.android.apps.maps", "Maps"),
-            listOf("spotify", "musiqa och") to
+            listOf("spotify", "musiqa och", "spotify och") to
                 Pair("com.spotify.music", "Spotify"),
-            listOf("sozlamalar", "настройки", "settings") to
-                Pair("android.settings", "Settings"),
-            listOf("calculator", "kalkulyator", "калькулятор") to
-                Pair("com.google.android.calculator", "Calculator"),
-            listOf("gmail", "почта", "email") to
+            listOf("sozlamalarni och", "sozlamalar", "sozlama",
+                   "открой настройки", "настройки", "settings") to
+                Pair("android.settings", "Sozlamalar"),
+            listOf("kalkulyatorni och", "kalkulyator",
+                   "калькулятор", "calculator") to
+                Pair("com.google.android.calculator", "Kalkulyator"),
+            listOf("gmailni och", "gmail", "pochta",
+                   "почта", "email") to
                 Pair("com.google.android.gm", "Gmail"),
-            listOf("play market", "плей маркет", "market") to
+            listOf("play marketni och", "play market", "market",
+                   "плей маркет") to
                 Pair("com.android.vending", "Play Market"),
-            listOf("chrome", "браузер", "brauzer") to
-                Pair("com.android.chrome", "Chrome")
+            listOf("chromeni och", "chrome", "brauzer",
+                   "браузер", "хром") to
+                Pair("com.android.chrome", "Chrome"),
+            listOf("galereyani och", "galereya", "rasmlar",
+                   "галерея", "gallery") to
+                Pair("com.google.android.apps.photos", "Galereya")
         )
 
         for ((keywords, appInfo) in appMap) {
