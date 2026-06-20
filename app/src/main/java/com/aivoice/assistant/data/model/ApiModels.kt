@@ -33,6 +33,27 @@ data class Usage(
     @SerializedName("total_tokens") val totalTokens: Int
 )
 
+// Gemini API modellari
+data class GeminiRequest(
+    val contents: List<GeminiContent>
+)
+
+data class GeminiContent(
+    val parts: List<GeminiPart>
+)
+
+data class GeminiPart(
+    val text: String
+)
+
+data class GeminiResponse(
+    val candidates: List<GeminiCandidate>?
+)
+
+data class GeminiCandidate(
+    val content: GeminiContent?
+)
+
 // OpenWeather API modellari
 data class WeatherResponse(
     val name: String,
